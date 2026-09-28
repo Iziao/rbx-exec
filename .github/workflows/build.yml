@@ -26,9 +26,12 @@ jobs:
           make config=release \
             CXX="xcrun --sdk iphoneos clang++ -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
             CC="xcrun --sdk iphoneos clang -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
-            build/release/libluauvm.a build/release/libluaucompiler.a || true
+            || true
           cd ..
-          ls -la luau/build/release/libluauvm.a luau/build/release/libluaucompiler.a
+          echo "=== VM ARCHIVE CONTENT CHECK ==="
+          ar t luau/build/release/libluauvm.a | grep -c "lvmload" || echo "lvmload NOT in archive"
+          nm luau/build/release/libluauvm.a | grep -c "luau_load" || echo "luau_load symbol NOT in archive"
+          echo "=== END ==="
 
       - name: Build dylib
         run: |
