@@ -26,26 +26,15 @@ jobs:
           make config=release \
             CXX="xcrun --sdk iphoneos clang++ -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
             CC="xcrun --sdk iphoneos clang -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
-            build/release/libluauvm.a build/release/libluaucompiler.a || true
+            || true
           cd ..
-          echo "=================================================="
-          echo "DIRECTORY LISTING"
-          echo "=================================================="
-          ls -la luau/build/release/ || echo "no release dir"
-          echo "=================================================="
-          echo "OBJECTS INSIDE libluauvm.a"
-          echo "=================================================="
-          ar t luau/build/release/libluauvm.a 2>&1 | head -80 || echo "cannot read archive"
-          echo "=================================================="
-          echo "SEARCH FOR luau_load SYMBOL"
-          echo "=================================================="
-          nm luau/build/release/libluauvm.a 2>&1 | grep -i "luau_load" | head -5 || echo "NOT FOUND"
-          echo "=================================================="
-          echo "SEARCH FOR lvmload OBJECT"
-          echo "=================================================="
-          ls -la luau/build/release/VM/src/ 2>&1 | grep -i "lvmload" || echo "no lvmload object"
-          ls -la luau/build/release/VM/ 2>&1 || echo "no VM dir under release"
-          echo "=================================================="
+          echo "=== ALL .a FILES ==="
+          find luau/build -name '*.a' -exec ls -la {} \;
+          echo "=== OBJECTS IN libluauvm.a ==="
+          find luau/build -name 'libluauvm.a' -exec ar t {} \; | head -60
+          echo "=== SYMBOL CHECK ==="
+          find luau/build -name 'libluauvm.a' -exec nm {} \; | grep luau_load
+          echo "=== END ==="
 
       - name: Build dylib
         run: |
