@@ -22,7 +22,10 @@ LUAU_CC  := ../luau/build/release/libluaucompiler.a
 all: executor.dylib
 
 executor.dylib: $(OBJECTS) $(LUAU_VM) $(LUAU_CC)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LUAU_VM) $(LUAU_CC) -lobjc -lz
+	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) \
+		-Wl,-force_load,$(LUAU_VM) \
+		-Wl,-force_load,$(LUAU_CC) \
+		-lobjc -lz
 
 %.o: %.mm
 	$(CXX) $(CFLAGS) -c -o $@ $<
