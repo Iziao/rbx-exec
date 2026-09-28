@@ -26,11 +26,11 @@ jobs:
           make config=release \
             CXX="xcrun --sdk iphoneos clang++ -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
             CC="xcrun --sdk iphoneos clang -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
-            build/release/libluauv**.a build/release/libluaucompiler.a
+            build/release/libluauvm.a build/release/libluaucompiler.a
           cd ..
           ls -la luau/build/release/
           libtool -static -o luau/libLuau.a \
-            luau/build/release/libluauv**.a \
+            luau/build/release/libluauvm.a \
             luau/build/release/libluaucompiler.a
           ls -la luau/libLuau.a
 
