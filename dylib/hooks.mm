@@ -1,4 +1,5 @@
 #include "executor.h"
+#import <Foundation/Foundation.h>
 #include <dlfcn.h>
 #include <mach-o/dyld.h>
 #include <mach-o/nlist.h>
