@@ -29,10 +29,6 @@ jobs:
             build/release/libluauvm.a build/release/libluaucompiler.a
           cd ..
           ls -la luau/build/release/
-          libtool -static -o luau/libLuau.a \
-            luau/build/release/libluauvm.a \
-            luau/build/release/libluaucompiler.a
-          ls -la luau/libLuau.a
 
       - name: Build dylib
         run: |
