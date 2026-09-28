@@ -1,0 +1,53 @@
+name: build-ios-dylib
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_15.2.app
+
+      - name: Fetch Luau
+        run: |
+          git clone --depth 1 --branch 0.640 \
+            https://github.com/luau-lang/luau.git luau
+
+      - name: Build Luau for iOS
+        run: |
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          cat > tc.cmake <<EOF
+          set(CMAKE_SYSTEM_NAME iOS)
+          set(CMAKE_OSX_SYSROOT $SDK)
+          set(CMAKE_OSX_ARCHITECTURES arm64)
+          set(CMAKE_OSX_DEPLOYMENT_TARGET 15.0)
+          set(CMAKE_C_COMPILER /usr/bin/clang)
+          set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+          EOF
+          cmake -S luau -B luau/build-ios \
+            -DCMAKE_TOOLCHAIN_FILE=tc.cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLUAU_BUILD_TESTS=OFF \
+            -DLUAU_BUILD_CLI=OFF \
+            -DLUAU_BUILD_WEB=OFF
+          cmake --build luau/build-ios -j4
+          libtool -static -o luau/build-ios/libLuau.a \
+            luau/build-ios/VM/libLuau.VM.a \
+            luau/build-ios/Compiler/libLuau.Compiler.a
+
+      - name: Build dylib
+        run: |
+          cd dylib
+          make
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: executor-dylib
+          path: dylib/executor.dylib
