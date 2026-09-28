@@ -5,21 +5,21 @@
 namespace executor {
 
 static lua_State*      g_L      = nullptr;
-static int             g_envRef = LUA_NOREF;
+static int             g_envRef = -1;
 static dispatch_queue_t g_queue = nil;
 
 lua_State* State()  { return g_L; }
 int        EnvRef() { return g_envRef; }
 
-// Shared environment table. getgenv() hands this out so scripts can
-// stash values that persist across runs.
-static int CreateSharedEnv(lua_State* L) {
+static void CreateSharedEnv(lua_State* L) {
     lua_newtable(L);
     lua_newtable(L);
     lua_getglobal(L, "_G");
     lua_setfield(L, -2, "__index");
     lua_setmetatable(L, -2);
-    return luaL_ref(L, LUA_REGISTRYINDEX);
+    lua_pushvalue(L, -1);
+    g_envRef = lua_ref(L, LUA_REGISTRYINDEX);
+    lua_pop(L, 1);
 }
 
 void Initialize() {
@@ -33,7 +33,7 @@ void Initialize() {
         g_L = luaL_newstate();
         if (!g_L) return;
         luaL_openlibs(g_L);
-        g_envRef = CreateSharedEnv(g_L);
+        CreateSharedEnv(g_L);
         api::Register(g_L);
         hooks::Install();
         NSLog(@"[cobble] executor ready");
@@ -79,10 +79,10 @@ std::string RunScriptInternal(const std::string& source) {
     int nret = lua_gettop(L);
     std::string out;
     for (int i = 1; i <= nret; ++i) {
-        size_t len = 0;
-        const char* s = luaL_tolstring(L, i, &len);
-        if (s) { if (!out.empty()) out += "\t"; out.append(s, len); }
-        lua_pop(L, 1);
+        if (lua_type(L, i) == LUA_TSTRING || lua_type(L, i) == LUA_TNUMBER) {
+            const char* s = lua_tostring(L, i);
+            if (s) { if (!out.empty()) out += "\t"; out.append(s); }
+        }
     }
     lua_settop(L, 0);
     return out.empty() ? "[ok]" : out;
