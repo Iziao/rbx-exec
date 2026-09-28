@@ -14,32 +14,54 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_15.2.app
 
+      - name: Install cmake
+        run: brew install cmake
+
       - name: Fetch Luau
         run: |
           git clone --depth 1 --branch 0.640 \
             https://github.com/luau-lang/luau.git luau
 
-      - name: Build Luau for iOS
+      - name: Build Luau for iOS with CMake
         run: |
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-          cd luau
-          make config=release \
-            CXX="xcrun --sdk iphoneos clang++ -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
-            CC="xcrun --sdk iphoneos clang -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
-            || true
-          cd ..
+          cat > tc.cmake <<EOF
+          set(CMAKE_SYSTEM_NAME iOS)
+          set(CMAKE_OSX_SYSROOT $SDK)
+          set(CMAKE_OSX_ARCHITECTURES arm64)
+          set(CMAKE_OSX_DEPLOYMENT_TARGET 15.0)
+          set(CMAKE_C_COMPILER /usr/bin/clang)
+          set(CMAKE_CXX_COMPILER /usr/bin/clang++)
+          set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
+          set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
+          set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+          EOF
+          cmake -S luau -B luau/build-ios \
+            -DCMAKE_TOOLCHAIN_FILE=tc.cmake \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DLUAU_BUILD_CLI=OFF \
+            -DLUAU_BUILD_TESTS=OFF \
+            -DLUAU_BUILD_WEB=OFF
+          cmake --build luau/build-ios -j4
+          echo "=== ARCHIVES PRODUCED ==="
+          find luau/build-ios -name '*.a' -exec ls -la {} \;
+          echo "=== ARCHITECTURE CHECK ==="
+          for f in luau/build-ios/*/*.a; do
+            echo "--- $f ---"
+            lipo -info "$f" 2>&1
+          done
 
-      - name: Verify archive visibility from dylib dir
+      - name: Symlink archives to expected path
         run: |
-          cd dylib
-          echo "=== pwd: $(pwd) ==="
-          echo "=== ../luau/build/release contents ==="
-          ls -la ../luau/build/release/libluauvm.a ../luau/build/release/libluaucompiler.a
+          mkdir -p luau/build/release
+          find luau/build-ios -name 'libluauvm.a' -exec cp {} luau/build/release/ \;
+          find luau/build-ios -name 'libluaucompiler.a' -exec cp {} luau/build/release/ \;
+          ls -la luau/build/release/
 
       - name: Build dylib
         run: |
           cd dylib
-          make VERBOSE=1
+          make
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
