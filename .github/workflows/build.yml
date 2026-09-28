@@ -28,7 +28,18 @@ jobs:
             CC="xcrun --sdk iphoneos clang -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
             build/release/libluauvm.a build/release/libluaucompiler.a
           cd ..
-          ls -la luau/build/release/
+          echo "===================================================="
+          echo "contents of libluauvm.a:"
+          echo "===================================================="
+          ar t luau/build/release/libluauvm.a | head -50
+          echo "===================================================="
+          echo "does it contain luau_load?"
+          echo "===================================================="
+          nm luau/build/release/libluauvm.a 2>/dev/null | grep -i "luau_load" | head -5 || echo "NOT FOUND"
+          echo "===================================================="
+          echo "does it contain lua_pcall?"
+          echo "===================================================="
+          nm luau/build/release/libluauvm.a 2>/dev/null | grep -i "lua_pcall" | head -5 || echo "NOT FOUND"
 
       - name: Build dylib
         run: |
