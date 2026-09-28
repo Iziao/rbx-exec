@@ -39,6 +39,7 @@ jobs:
           cmake -S luau -B luau/build-ios \
             -DCMAKE_TOOLCHAIN_FILE=tc.cmake \
             -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
             -DLUAU_BUILD_CLI=OFF \
             -DLUAU_BUILD_TESTS=OFF \
             -DLUAU_BUILD_WEB=OFF
@@ -46,10 +47,7 @@ jobs:
           echo "=== ARCHIVES PRODUCED ==="
           find luau/build-ios -name '*.a' -exec ls -la {} \;
           echo "=== ARCHITECTURE CHECK ==="
-          for f in luau/build-ios/*/*.a; do
-            echo "--- $f ---"
-            lipo -info "$f" 2>&1
-          done
+          find luau/build-ios -name '*.a' -exec sh -c 'echo "--- $1 ---"; lipo -info "$1" 2>&1' _ {} \;
 
       - name: Symlink archives to expected path
         run: |
