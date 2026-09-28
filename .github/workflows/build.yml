@@ -26,15 +26,16 @@ jobs:
           make config=release \
             CXX="xcrun --sdk iphoneos clang++ -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
             CC="xcrun --sdk iphoneos clang -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
-            luau-vm luau-compiler 2>&1 | tee /tmp/luau.log
+            luau-vm luau-compiler
           cd ..
-          libtool -static -o luau/libLuau.a luau/build/release/*.a 2>&1 | tee -a /tmp/luau.log
-
-      - name: Dump error if failed
-        if: failure()
-        run: |
-          echo "::error::LAST 40 LINES OF LOG FOLLOW"
-          tail -40 /tmp/luau.log || true
+          echo "--- looking for compiled .a files ---"
+          find luau/build -name '*.a' -exec ls -la {} \;
+          echo "--- merging ---"
+          libtool -static -o luau/libLuau.a \
+            luau/build/release/*.a || \
+          libtool -static -o luau/libLuau.a \
+            $(find luau/build -name '*.a')
+          ls -la luau/libLuau.a
 
       - name: Build dylib
         run: |
