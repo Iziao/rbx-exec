@@ -1,5 +1,3 @@
-# iOS arm64 dylib. Link install-name points at the app's Frameworks dir
-# so dyld finds it when the app launches.
 SDK      := $(shell xcrun --sdk iphoneos --show-sdk-path)
 CXX      := xcrun --sdk iphoneos clang++
 ARCH     := arm64
@@ -18,12 +16,13 @@ LDFLAGS  := -arch $(ARCH) -isysroot $(SDK) -miphoneos-version-min=$(MIN_IOS) \
 
 SOURCES  := entry.mm executor.mm api.mm hooks.mm ui/overlay.mm
 OBJECTS  := $(SOURCES:.mm=.o)
-LUAU     := ../luau/libLuau.a
+LUAU_VM  := ../luau/build/release/libluauvm.a
+LUAU_CC  := ../luau/build/release/libluaucompiler.a
 
 all: executor.dylib
 
-executor.dylib: $(OBJECTS) $(LUAU)
-	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LUAU) -lobjc -lz
+executor.dylib: $(OBJECTS) $(LUAU_VM) $(LUAU_CC)
+	$(CXX) $(LDFLAGS) -o $@ $(OBJECTS) $(LUAU_VM) $(LUAU_CC) -lobjc -lz
 
 %.o: %.mm
 	$(CXX) $(CFLAGS) -c -o $@ $<
