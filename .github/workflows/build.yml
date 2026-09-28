@@ -14,9 +14,6 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode_15.2.app
 
-      - name: Install cmake
-        run: brew install cmake
-
       - name: Fetch Luau
         run: |
           git clone --depth 1 --branch 0.640 \
@@ -25,24 +22,17 @@ jobs:
       - name: Build Luau for iOS
         run: |
           SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-          cat > tc.cmake <<EOF
-          set(CMAKE_SYSTEM_NAME iOS)
-          set(CMAKE_OSX_SYSROOT $SDK)
-          set(CMAKE_OSX_ARCHITECTURES arm64)
-          set(CMAKE_OSX_DEPLOYMENT_TARGET 15.0)
-          set(CMAKE_C_COMPILER /usr/bin/clang)
-          set(CMAKE_CXX_COMPILER /usr/bin/clang++)
-          EOF
-          cmake -S luau -B luau/build-ios \
-            -DCMAKE_TOOLCHAIN_FILE=tc.cmake \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DLUAU_BUILD_TESTS=OFF \
-            -DLUAU_BUILD_CLI=OFF \
-            -DLUAU_BUILD_WEB=OFF
-          cmake --build luau/build-ios -j4
-          libtool -static -o luau/build-ios/libLuau.a \
-            luau/build-ios/VM/libLuau.VM.a \
-            luau/build-ios/Compiler/libLuau.Compiler.a
+          cd luau
+          make config=release \
+            CXX="xcrun --sdk iphoneos clang++ -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
+            CC="xcrun --sdk iphoneos clang -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
+            luau-vm luau-compiler
+          cd ..
+          libtool -static -o luau/libLuau.a \
+            luau/build/release/libLuau.VM.a \
+            luau/build/release/libLuau.Compiler.a 2>/dev/null || \
+          libtool -static -o luau/libLuau.a \
+            luau/build/release/*.a
 
       - name: Build dylib
         run: |
