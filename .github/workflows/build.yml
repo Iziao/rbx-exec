@@ -26,20 +26,18 @@ jobs:
           make config=release \
             CXX="xcrun --sdk iphoneos clang++ -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
             CC="xcrun --sdk iphoneos clang -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
-            || true
+            build/release/libluauvm.a build/release/libluaucompiler.a || true
           cd ..
-          echo "=== ALL .a FILES ==="
-          find luau/build -name '*.a' -exec ls -la {} \;
-          echo "=== OBJECTS IN libluauvm.a ==="
-          find luau/build -name 'libluauvm.a' -exec ar t {} \; | head -60
-          echo "=== SYMBOL CHECK ==="
-          find luau/build -name 'libluauvm.a' -exec nm {} \; | grep luau_load
-          echo "=== END ==="
+          libtool -static -o luau/libLuau.a \
+            luau/build/release/libluauvm.a \
+            luau/build/release/libluaucompiler.a
+          nm luau/libLuau.a | grep -c luau_load || echo "luau_load missing!"
+          ls -la luau/libLuau.a
 
       - name: Build dylib
         run: |
           cd dylib
-          make
+          make 2>&1 | tail -80
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
