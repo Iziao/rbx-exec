@@ -28,15 +28,18 @@ jobs:
             CC="xcrun --sdk iphoneos clang -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
             || true
           cd ..
-          echo "=== VM ARCHIVE CONTENT CHECK ==="
-          ar t luau/build/release/libluauvm.a | grep -c "lvmload" || echo "lvmload NOT in archive"
-          nm luau/build/release/libluauvm.a | grep -c "luau_load" || echo "luau_load symbol NOT in archive"
-          echo "=== END ==="
+
+      - name: Verify archive visibility from dylib dir
+        run: |
+          cd dylib
+          echo "=== pwd: $(pwd) ==="
+          echo "=== ../luau/build/release contents ==="
+          ls -la ../luau/build/release/libluauvm.a ../luau/build/release/libluaucompiler.a
 
       - name: Build dylib
         run: |
           cd dylib
-          make
+          make VERBOSE=1
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
