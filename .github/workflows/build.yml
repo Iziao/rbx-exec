@@ -26,20 +26,26 @@ jobs:
           make config=release \
             CXX="xcrun --sdk iphoneos clang++ -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
             CC="xcrun --sdk iphoneos clang -arch arm64 -isysroot $SDK -miphoneos-version-min=15.0" \
-            build/release/libluauvm.a build/release/libluaucompiler.a
+            build/release/libluauvm.a build/release/libluaucompiler.a || true
           cd ..
-          echo "===================================================="
-          echo "contents of libluauvm.a:"
-          echo "===================================================="
-          ar t luau/build/release/libluauvm.a | head -50
-          echo "===================================================="
-          echo "does it contain luau_load?"
-          echo "===================================================="
-          nm luau/build/release/libluauvm.a 2>/dev/null | grep -i "luau_load" | head -5 || echo "NOT FOUND"
-          echo "===================================================="
-          echo "does it contain lua_pcall?"
-          echo "===================================================="
-          nm luau/build/release/libluauvm.a 2>/dev/null | grep -i "lua_pcall" | head -5 || echo "NOT FOUND"
+          echo "=================================================="
+          echo "DIRECTORY LISTING"
+          echo "=================================================="
+          ls -la luau/build/release/ || echo "no release dir"
+          echo "=================================================="
+          echo "OBJECTS INSIDE libluauvm.a"
+          echo "=================================================="
+          ar t luau/build/release/libluauvm.a 2>&1 | head -80 || echo "cannot read archive"
+          echo "=================================================="
+          echo "SEARCH FOR luau_load SYMBOL"
+          echo "=================================================="
+          nm luau/build/release/libluauvm.a 2>&1 | grep -i "luau_load" | head -5 || echo "NOT FOUND"
+          echo "=================================================="
+          echo "SEARCH FOR lvmload OBJECT"
+          echo "=================================================="
+          ls -la luau/build/release/VM/src/ 2>&1 | grep -i "lvmload" || echo "no lvmload object"
+          ls -la luau/build/release/VM/ 2>&1 || echo "no VM dir under release"
+          echo "=================================================="
 
       - name: Build dylib
         run: |
